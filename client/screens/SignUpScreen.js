@@ -1,4 +1,3 @@
-// screens/SignupScreen.js
 import React, { useState } from "react";
 import {
   View,
@@ -21,7 +20,7 @@ const SignupScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Signup</Text>
+      <Text style={styles.title}>Create account</Text>
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -64,19 +63,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 20,
     textAlign: "center",
+    color: "black", // Title text color
   },
   input: {
-    height: 40,
+    height: 50,
     borderColor: "#ccc",
     borderWidth: 1,
-    borderRadius: 5,
+    borderRadius: 10,
     marginBottom: 20,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
+    backgroundColor: "#f8f9fa", // Input background color
   },
   button: {
     backgroundColor: "#007bff",
     padding: 15,
-    borderRadius: 5,
+    borderRadius: 10,
     alignItems: "center",
   },
   buttonText: {
