@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
 const SplashScreen = () => {
@@ -8,7 +8,7 @@ const SplashScreen = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigation.navigate("Login");
-    }, 2000);
+    }, 4000);
 
     return () => clearTimeout(timer);
   }, [navigation]);
@@ -16,6 +16,7 @@ const SplashScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome to Bhuquanta</Text>
+      <Image source={require("../assets/Onlineworld.gif")} style={styles.gif} />
     </View>
   );
 };
@@ -31,6 +32,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
+  },
+  gif: {
+    width: 200,
+    height: 200,
   },
 });
 

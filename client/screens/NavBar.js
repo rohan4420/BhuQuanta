@@ -23,10 +23,10 @@ const NavBar = () => {
 
 const styles = StyleSheet.create({
   navbar: {
-    height: 60, // Increase the height of the navbar for more space
+    height: 80, // Increase the height of the navbar for more space
     backgroundColor: "#007bff",
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
     position: "absolute",
@@ -34,8 +34,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
   },
   title: {
     color: "#fff",
@@ -45,16 +43,15 @@ const styles = StyleSheet.create({
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    padding: 9,
     borderRadius: 5,
     backgroundColor: "#0056b3",
+    paddingHorizontal: 10,
   },
   logoutText: {
     color: "#fff",
     fontSize: 18,
     marginLeft: 5,
-    fontWeight: "bold",
   },
 });
 

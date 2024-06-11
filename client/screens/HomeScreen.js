@@ -157,7 +157,7 @@ const HomeScreen = () => {
       )}
 
       <TouchableOpacity style={styles.button} onPress={handleShowResults}>
-        <Text style={styles.buttonText}>Show Results</Text>
+        <Text style={styles.buttonText}>Search</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.button}
