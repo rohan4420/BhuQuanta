@@ -1,89 +1,105 @@
-// screens/HomeScreen.js
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
 import { useNavigation } from "@react-navigation/native";
+import axios from 'axios';
 import Navbar from "./NavBar";
 
 const HomeScreen = () => {
   const navigation = useNavigation();
   const [selectedState, setSelectedState] = useState("maharashtra");
-  const [districts, setDistricts] = useState([]);
-  const [tehsils, setTehsils] = useState([]);
-  const [villages, setVillages] = useState([]);
-  const [khasras, setKhasras] = useState([]);
-
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [selectedTehsil, setSelectedTehsil] = useState(null);
   const [selectedVillage, setSelectedVillage] = useState(null);
   const [selectedKhasra, setSelectedKhasra] = useState(null);
 
-  useEffect(() => {
-    // Simulate fetching districts based on the fixed state "Maharashtra"
-    if (selectedState) {
-      setDistricts([
-        { label: "District 1", value: "district1" },
-        { label: "District 2", value: "district2" },
-      ]);
-    } else {
-      setDistricts([]);
-    }
-  }, [selectedState]);
+  const [districts, setDistricts] = useState([]);
+  const [tehsils, setTehsils] = useState([]);
+  const [villages, setVillages] = useState([]);
+  const [khasras, setKhasras] = useState([]);
 
   useEffect(() => {
-    // Simulate fetching tehsils based on selected district
-    if (selectedDistrict) {
-      setTehsils([
-        { label: "Tehsil 1", value: "tehsil1" },
-        { label: "Tehsil 2", value: "tehsil2" },
-      ]);
-    } else {
-      setTehsils([]);
-      setVillages([]);
-      setKhasras([]);
-    }
-  }, [selectedDistrict]);
+    fetchDistricts();
+  }, []);
 
-  useEffect(() => {
-    // Simulate fetching villages based on selected tehsil
-    if (selectedTehsil) {
-      setVillages([
-        { label: "Village 1", value: "village1" },
-        { label: "Village 2", value: "village2" },
-      ]);
-    } else {
-      setVillages([]);
-      setKhasras([]);
-    }
-  }, [selectedTehsil]);
+  const geoserverUrl = 'https://gserver.quantasip.com/geoserver';
+  const workspace = 'ne';
 
-  useEffect(() => {
-    // Simulate fetching khasras based on selected village
-    if (selectedVillage) {
-      setKhasras([
-        { label: "Khasra 1", value: "khasra1" },
-        { label: "Khasra 2", value: "khasra2" },
-      ]);
-    } else {
-      setKhasras([]);
+  const fetchData = async (url) => {
+    try {
+      const response = await axios.get(url);
+      const data = response.data.features.map(feature => feature.properties);
+      return data;
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      return [];
     }
-  }, [selectedVillage]);
+  };
+
+  const fetchDistricts = async () => {
+    const url = `http://13.200.63.219:8080/geoserver/ne/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=ne%3Acompletemaster_data&maxFeatures=50&outputFormat=application%2Fjson`;
+    const data = await fetchData(url);
+    const districts = [...new Set(data.map(item => item.district))].filter(district => district).map(district => ({
+      label: district,
+      value: district
+    }));
+    setDistricts(districts);
+  };
+
+  const fetchTehsils = async (district) => {
+    const url = `http://13.200.63.219:8080/geoserver/ne/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=ne%3Acompletemaster_data&maxFeatures=50&outputFormat=application%2Fjson&cql_filter=district='${district}'`;
+    const data = await fetchData(url);
+    const tehsils = [...new Set(data.map(item => item.tehsil))].filter(tehsil => tehsil).map(tehsil => ({
+      label: tehsil,
+      value: tehsil
+    }));
+    setTehsils(tehsils);
+  };
+
+  const fetchVillages = async (tehsil) => {
+    const url = `http://13.200.63.219:8080/geoserver/ne/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=ne%3Acompletemaster_data&maxFeatures=50&outputFormat=application%2Fjson&cql_filter=tehsil='${tehsil}'`;
+    const data = await fetchData(url);
+    const villages = [...new Set(data.map(item => item.village))].filter(village => village).map(village => ({
+      label: village,
+      value: village
+    }));
+    setVillages(villages);
+  };
+
+  const fetchKhasras = async (village) => {
+    const url = `http://13.200.63.219:8080/geoserver/ne/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=ne%3Acompletemaster_data&maxFeatures=50&outputFormat=application%2Fjson&cql_filter=village='${village}'`;
+    const data = await fetchData(url);
+    const khasras = [...new Set(data.map(item => item.khasra_no))].filter(khasra_no => khasra_no).map(khasra_no => ({
+      label: khasra_no,
+      value: khasra_no
+    }));
+    setKhasras(khasras);
+  };
+
+  const handleDistrictChange = (district) => {
+    setSelectedDistrict(district);
+    setSelectedTehsil(null);
+    setSelectedVillage(null);
+    setSelectedKhasra(null);
+    fetchTehsils(district);
+  };
+
+  const handleTehsilChange = (tehsil) => {
+    setSelectedTehsil(tehsil);
+    setSelectedVillage(null);
+    setSelectedKhasra(null);
+    fetchVillages(tehsil);
+  };
+
+  const handleVillageChange = (village) => {
+    setSelectedVillage(village);
+    setSelectedKhasra(null);
+    fetchKhasras(village);
+  };
 
   const handleShowResults = () => {
-    if (!selectedDistrict) {
-      Alert.alert("Error", "Please select a district.");
-      return;
-    }
-    if (!selectedTehsil) {
-      Alert.alert("Error", "Please select a tehsil.");
-      return;
-    }
-    if (!selectedVillage) {
-      Alert.alert("Error", "Please select a village.");
-      return;
-    }
-    if (!selectedKhasra) {
-      Alert.alert("Error", "Please select a khasra number.");
+    if (!selectedDistrict || !selectedTehsil || !selectedVillage || !selectedKhasra) {
+      Alert.alert("Error", "Please select all options.");
       return;
     }
 
@@ -94,7 +110,6 @@ const HomeScreen = () => {
       village: selectedVillage,
       khasra: selectedKhasra,
     });
-    navigation.navigate("Result");
   };
 
   return (
@@ -112,10 +127,10 @@ const HomeScreen = () => {
         />
       </View>
 
-      {selectedState && (
+      {selectedState && districts.length > 0 && (
         <View style={styles.pickerContainer}>
           <RNPickerSelect
-            onValueChange={(value) => setSelectedDistrict(value)}
+            onValueChange={handleDistrictChange}
             items={districts}
             style={pickerSelectStyles}
             placeholder={{ label: "Select a district", value: null }}
@@ -123,10 +138,10 @@ const HomeScreen = () => {
         </View>
       )}
 
-      {selectedDistrict && (
+      {selectedDistrict && tehsils.length > 0 && (
         <View style={styles.pickerContainer}>
           <RNPickerSelect
-            onValueChange={(value) => setSelectedTehsil(value)}
+            onValueChange={handleTehsilChange}
             items={tehsils}
             style={pickerSelectStyles}
             placeholder={{ label: "Select a tehsil", value: null }}
@@ -134,10 +149,10 @@ const HomeScreen = () => {
         </View>
       )}
 
-      {selectedTehsil && (
+      {selectedTehsil && villages.length > 0 && (
         <View style={styles.pickerContainer}>
           <RNPickerSelect
-            onValueChange={(value) => setSelectedVillage(value)}
+            onValueChange={handleVillageChange}
             items={villages}
             style={pickerSelectStyles}
             placeholder={{ label: "Select a village", value: null }}
@@ -145,7 +160,7 @@ const HomeScreen = () => {
         </View>
       )}
 
-      {selectedVillage && (
+      {selectedVillage && khasras.length > 0 && (
         <View style={styles.pickerContainer}>
           <RNPickerSelect
             onValueChange={(value) => setSelectedKhasra(value)}
