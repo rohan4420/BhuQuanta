@@ -25,11 +25,19 @@ const HomeScreen = () => {
   const geoserverUrl = 'https://gserver.quantasip.com/geoserver';
   const workspace = 'ne';
 
-  const fetchData = async (url) => {
+  const fetchData = async (layerName, filters = {}) => {
+    let data = {
+      service: 'WFS',
+      version: '1.0.0',
+      request: 'GetFeature',
+      typeName: `${workspace}:${layerName}`,
+      outputFormat: 'application/json',
+      ...filters
+    };
     try {
-      const response = await axios.get(url);
-      const data = response.data.features.map(feature => feature.properties);
-      return data;
+      const response = await axios.get(`${geoserverUrl}/${workspace}/wfs`, { params: data });
+      const resultData = response.data.features.map(feature => feature.properties);
+      return resultData;
     } catch (error) {
       console.error('Error fetching data:', error);
       return [];
@@ -37,8 +45,7 @@ const HomeScreen = () => {
   };
 
   const fetchDistricts = async () => {
-    const url = `http://13.200.63.219:8080/geoserver/ne/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=ne%3Acompletemaster_data&maxFeatures=50&outputFormat=application%2Fjson`;
-    const data = await fetchData(url);
+    const data = await fetchData('completemaster_data');
     const districts = [...new Set(data.map(item => item.district))].filter(district => district).map(district => ({
       label: district,
       value: district
@@ -47,8 +54,8 @@ const HomeScreen = () => {
   };
 
   const fetchTehsils = async (district) => {
-    const url = `http://13.200.63.219:8080/geoserver/ne/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=ne%3Acompletemaster_data&maxFeatures=50&outputFormat=application%2Fjson&cql_filter=district='${district}'`;
-    const data = await fetchData(url);
+    const filters = { cql_filter: `district='${district}'` };
+    const data = await fetchData('completemaster_data', filters);
     const tehsils = [...new Set(data.map(item => item.tehsil))].filter(tehsil => tehsil).map(tehsil => ({
       label: tehsil,
       value: tehsil
@@ -57,8 +64,8 @@ const HomeScreen = () => {
   };
 
   const fetchVillages = async (tehsil) => {
-    const url = `http://13.200.63.219:8080/geoserver/ne/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=ne%3Acompletemaster_data&maxFeatures=50&outputFormat=application%2Fjson&cql_filter=tehsil='${tehsil}'`;
-    const data = await fetchData(url);
+    const filters = { cql_filter: `tehsil='${tehsil}'` };
+    const data = await fetchData('completemaster_data', filters);
     const villages = [...new Set(data.map(item => item.village))].filter(village => village).map(village => ({
       label: village,
       value: village
@@ -67,8 +74,8 @@ const HomeScreen = () => {
   };
 
   const fetchKhasras = async (village) => {
-    const url = `http://13.200.63.219:8080/geoserver/ne/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=ne%3Acompletemaster_data&maxFeatures=50&outputFormat=application%2Fjson&cql_filter=village='${village}'`;
-    const data = await fetchData(url);
+    const filters = { cql_filter: `village='${village}'` };
+    const data = await fetchData('completemaster_data', filters);
     const khasras = [...new Set(data.map(item => item.khasra_no))].filter(khasra_no => khasra_no).map(khasra_no => ({
       label: khasra_no,
       value: khasra_no
