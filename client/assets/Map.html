@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Parking System</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.6/proj4.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.6/proj4.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Hide body overflow */
+        }
+
+        #map {
+            height: 100%; /* Adjust map height to accommodate drawer */
+            width: 100%;
+        }
+
+        #controls {
+    position: absolute;
+    bottom: -100%; /* Initial position set to -95% */
+    left: 50%; /* Center the controls horizontally */
+    transform: translateX(-50%); /* Center the controls horizontally */
+    height: 70%; /* Adjusted height to 60% */
+    width: calc(100% - 10px); /* Adjusted width to fit device width minus some padding */
+    max-width: 400px; /* Set a max-width to prevent controls from becoming too wide */
+    z-index: 1000; /* Ensure controls are above the map */
+    padding: 10px;
+    background-color: #ffffff;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    transition: bottom 1s ease;
+}
+#toggleButton {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            border: none;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color:transparent;
+        }
+
+        #toggleButton img {
+            width: 50px;
+            height: auto;
+        }
+        #backButton {
+            background-color: transparent;
+            border: none;
+            color: #363A96;
+            font-size: 20px; /* Increase font size */
+            cursor: pointer;
+            transition: color 0.3s ease;
+            align-self: flex-start;
+            margin-bottom: 20px; /* Significant space below back button */
+        }
+
+        #backButton:hover {
+            color: #4c4fb9;
+        }
+
+        #backButton img {
+            width: 30px;
+            height: auto;
+        }
+
+        .label-select-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            margin-bottom: 20px; /* Increased space between each line */
+            border: 2px solid #000000; /* Add border */
+    border-radius: 5px; /* Add border-radius */
+    padding: 10px;
+        }
+
+        .label-select-container label {
+            font-weight: bold;
+            font-size: 20px; /* Increase font size */
+            margin-right: 20px; /* Space between label and select */
+        }
+
+        .label-select-container select {
+            font-size: 20px; /* Increase font size */
+            flex-grow: 1; /* Grow select to fill remaining space */
+            border: none; /* Remove border */
+    outline: none;
+        }
+        button#searchButton {
+    margin: 0 auto; /* Center the search button */
+    display: block; /* Ensure the button takes up full width */
+}
+
+        button {
+            background-color: #363A96;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 20px; /* Search button font size */
+            margin-top: 20px; /* Significant space above button */
+        }
+
+        button:hover {
+            background-color: #363A96;
+        }
+       @media only screen and (max-width: 768px) {
+    /* Adjustments for smaller screens */
+    #controls {
+        padding: 5px; /* Reduce padding for smaller screens */
+        overflow-y: auto; /* Allow vertical scrolling if needed */
+        height: calc(100vh - 150px); /* Adjusted height to accommodate dropdowns */
+    }
+
+    /* Reduce margin between containers */
+    .label-select-container {
+        margin-bottom: 10px;
+    }
+
+    /* Decrease font size for smaller screens */
+    button {
+        font-size: 16px;
+        margin-top: 10px; /* Reduce space above buttons */
+    }
+
+    /* Center the search button */
+    button#searchButton {
+        margin: 10px auto; /* Center the search button */
+        display: block; /* Ensure the button takes up full width */
+    }
+}
+
+        .leaflet-popup-content-wrapper {
+            width: auto !important; /* Allow content to expand horizontally */
+            max-height: 600px !important; /* Limit maximum height */
+            overflow-y: auto !important; /* Enable vertical scrolling if needed */
+        }
+
+        .leaflet-popup-content {
+            font-size: 16px; /* Adjust font size as needed */
+            padding: 10px; /* Adjust padding as needed */
+        }
+        .popup-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.popup-table td {
+    border: 1px solid #dddddd;
+    padding: 8px;
+}
+
+.popup-table .table-header {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+#toggleMapType {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 1001;
+    background-color: #ffffff;
+    border: 2px solid #363A96;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+#toggleMapType img {
+            width: 50px;
+            height: auto;
+        }
+#mapTypeDrawer {
+    position: fixed;
+    bottom: -100%;
+    left: 0;
+    width: 100%;
+    background-color: #ffffff;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    transition: bottom 0.5s ease;
+    z-index: 1000;
+    padding: 20px;
+    box-sizing: border-box;
+}
+#closeDrawerButton img {
+            width: 20px;
+            height: auto;
+        }
+
+#mapTypeDrawer.open {
+    bottom: 0;
+}
+
+
+#drawerContent {
+    display: flex;
+    flex-direction: column; /* Stack the buttons vertically */
+    justify-content: space-between; /* Justify the buttons */
+    height: 100%; /* Ensure the container takes up full height */
+}
+
+/* Container to hold the buttons */
+.button-container {
+    display: flex;
+    justify-content: space-between; /* Distributes the buttons to the far ends of the container */
+    align-items: center; /* Aligns items vertically in the center */
+    width: 100%; /* Adjust the width as needed */
+    padding: 10px; /* Optional: Add padding to the container */
+}
+
+/* Styling for the buttons */
+.mapTypeOption {
+    margin: 10px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    color: black; /* Change text color to black */
+    justify-content: space-between;
+}
+.mapTypeOption img {
+    margin-right: 5px; /* Adjust margin between image and text */
+
+
+}
+.spacer {
+    flex-grow: 1; /* Dummy element to take up remaining space */
+}
+
+
+/* Optional: styling for the image inside the button */
+.mapTypeOption img {
+    width: 60px;
+    height: auto;
+}
+
+
+
+.mapTypeOption:hover {
+
+    background-color: #4c4fb9;
+}
+
+#closeDrawerButton {
+    align-self: flex-end;
+    background-color: transparent;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #363A96;
+    padding: 0;
+    margin-bottom: 0%;
+    margin-top: 0%;
+}
+        .centered-link-container {
+    text-align: center;
+    margin-top: 10px; /* Adjust the margin as needed */
+}
+
+.centered-link-container a {
+    display: inline-block;
+    /* Add additional styles as needed */
+}
+        .spacer {
+    flex-grow: 1; /* Dummy element to take up remaining space */
+}
+@media (max-width: 768px) {
+    /* Adjustments for tablets */
+    #controls {
+        height: calc(100vh - 20px);
+        padding-bottom: 20px;
+    }
+}
+        @media only screen and (max-width: 480px) {
+    /* Adjustments for smaller screens such as Realme 7 */
+
+    #controls {
+        height: calc(100vh - 200px); /* Adjusted height to accommodate smaller screens */
+    }
+
+    /* Decrease font size for smaller screens */
+    .label-select-container label,
+    .label-select-container select,
+    button {
+        font-size: 14px;
+    }
+
+    /* Center the search button */
+    button#searchButton {
+        margin: 10px auto; /* Center the search button */
+        display: block; /* Ensure the button takes up full width */
+    }
+}
+
+
+
+
+    </style>
+</head>
+<body>
+<div id='map'></div>
+
+
+<button id="toggleMapType"><img src="layers.png"></button>
+<div id="mapTypeDrawer" class="closed">
+    <div id="drawerContent">
+        <button id="closeDrawerButton"><img src="Multiplication.png"></button>
+        <div class="spacer"></div> <!-- Dummy element for flexible space -->
+        <button class="mapTypeOption" data-map-type="satellite">
+            <img src="satellite.png">
+            <span>Satellite View</span>
+        </button>
+        <button class="mapTypeOption" data-map-type="osm">
+            <img src="osm.png">
+            <span>Open Street Map View</span>
+        </button>
+    </div>
+</div>
+
+
+
+<script>
+    var map = L.map('map').setView([20.5937, 78.9629], 5);
+
+ // Add Google Earth as the background layer
+ var googleSatelliteLayer = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+     maxZoom: 40,
+     subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+ });
+
+ var openStreetMapLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+     maxZoom: 40
+ });
+
+ // Initially set to Google Satellite
+ var currentLayer = googleSatelliteLayer.addTo(map);
+ var customIcon = L.icon({
+            iconUrl: 'custom.png', // Path to your custom icon image
+            iconSize: [30, 30], // Size of the icon
+            iconAnchor: [15, 30], // Point of the icon which will correspond to marker's location
+            popupAnchor: [0, -30] // Point from which the popup should open relative to the iconAnchor
+        });
+
+ var marker = L.marker([0, 0], { icon: customIcon }).addTo(map);
+
+ function toggleDrawer() {
+     var drawer = document.getElementById('mapTypeDrawer');
+     if (drawer.classList.contains('open')) {
+         drawer.classList.remove('open');
+         drawer.classList.add('closed');
+     } else {
+         drawer.classList.remove('closed');
+         drawer.classList.add('open');
+         toggleButton2.style.display = 'none';
+     }
+ }
+
+ function changeMapType(mapType) {
+     // Close any opened drawer
+     var drawer = document.getElementById('mapTypeDrawer');
+     if (drawer.classList.contains('open')) {
+         drawer.classList.remove('open');
+         drawer.classList.add('closed');
+     }
+
+     // Replace the current base layer with the selected base layer
+     if (mapType === 'satellite') {
+         map.removeLayer(currentLayer);
+         currentLayer = googleSatelliteLayer.addTo(map);
+     } else if (mapType === 'osm') {
+         map.removeLayer(currentLayer);
+         currentLayer = openStreetMapLayer.addTo(map);
+     }
+ }
+
+ function updateMarkerPosition(position) {
+     var lat = position.coords.latitude;
+     var lng = position.coords.longitude;
+     marker.setLatLng([lat, lng]);
+ }
+
+ function handleGeolocationError(error) {
+     console.error('Geolocation error:', error);
+ }
+
+ // Request user's location continuously
+ if (navigator.geolocation) {
+     navigator.geolocation.watchPosition(updateMarkerPosition, handleGeolocationError);
+ } else {
+     console.error('Geolocation is not supported by this browser.');
+ }
+
+ document.getElementById('toggleMapType').addEventListener('click', toggleDrawer);
+ document.getElementById('closeDrawerButton').addEventListener('click', toggleDrawer);
+
+ document.querySelectorAll('.mapTypeOption').forEach(function(button) {
+     button.addEventListener('click', function() {
+         var mapType = this.getAttribute('data-map-type');
+         changeMapType(mapType);
+     });
+ });
+
+
+
+
+
+  // Define GeoServer URL and workspace
+  var geoserverUrl = 'http://13.200.63.219:8080/geoserver';
+  var workspace = 'ne';
+
+  // List of layer names
+  var layerNames = ['achalpur', 'aheri', 'ahmadpur', 'akkalkot', 'akkalkua', 'akola','akole', 'akola_akola', 'akot', 'akrani', 'alibag', 'amalner', 'ambad', 'ambegaon', 'ambejogai', 'ambernath', 'amravati', 'anjangaon_surji', 'ardhapur', 'armori', 'arni', 'barshi', 'arvi',
+  'ashti', 'ashti_wardha', 'atpadi', 'aundha', 'aurangabad', 'ausa', 'babulgaon', 'badnapur', 'baglan', 'balapur', 'ballarpur', 'baramati', 'barshitakli', 'basmat', 'bavda', 'beed', 'beedmerge', 'bhadgaon', 'bhadravati', 'bhamragad', 'bhiwandi', 'bhiwapur', 'bhokar', 'bhokardan',
+  'bhor', 'bhudargad', 'bhum', 'bhusawal', 'biloli', 'bodvad', 'brahmapuri', 'buldhana', 'chakur', 'chalisgaon', 'chamorshi', 'chandgad', 'chandrapur', 'chandurbazar', 'chandurrly', 'chandwad', 'chikhaldara', 'chikhali', 'chimur', 'chiplun', 'chopda', 'dahanu', 'akot1','dapoli','darwha', 'daryapur', 'daund', 'deglur', 'deola', 'deoli', 'deoni', 'desaiganj_vadasa', 'deulgaon_raja', 'devgad', 'dhamangaonrailway', 'dhanora', 'dharangaon', 'dharashiv', 'dharmabad', 'dharni', 'dharur', 'dhule', 'digras', 'dindori', 'dodamarg', 'erandol', 'etapalli', 'gadchiroli', 'gadhinglaj', 'gangakhed',
+  , 'gangapur', 'georai', 'ghansawangi', 'ghatanji', 'gondpipri', 'guhaghar', 'hadgaon', 'hamragad', 'hatkangle', 'haveli', 'himayatnagar', 'hinganghat', 'hingna', 'hingoli', 'igatapuri', 'indapur', 'jafferabad', 'jalgaon_jalgaon', 'jalgaon_jamod', 'jalkot', 'jalna', 'jamkhed', 'jamner', 'jaoli', 'jath', 'jawhar', 'jintur', 'jiwati', 'junnar', 'kadegaon', 'kagal', 'kaij', 'kalamb', 'kalamb_yavatmal', 'kalameshwar', 'kalamnuri', 'kalwan', 'kalyan', 'kandhar', 'kankavli', 'kannad', 'karad', 'karanja', 'karanja_washim', 'karjat', 'karjat_raigad', 'karmala', 'karvir', 'katol', 'kavathemahakal', 'kelapur', 'khalapur', 'khamgaon', 'khanapur', 'khandala', 'khatav', 'khed',
+   'khed_pune', 'khuldabad', 'kinwat', 'kopargaon', 'korchi', 'koregaon', 'korpana', 'kudal', 'kuhi', 'kurkheda', 'lanja', 'loha', 'lohara', 'lonar', 'madha', 'mahabaleshwar', 'mahad', 'mahagaon', 'mahur', 'malegaon', 'malkapur', 'malshiras', 'malwan', 'man', 'mandangad', 'mangalvedhe', 'mangaon', 'mangrulpir', 'manjlegaon', 'manora', 'mantha', 'manvat', 'maregaon', 'mauda', 'mawal', 'mehkar', 'mhasla', 'miraj', 'mohol', 'mokhada', 'morshi', 'motala', 'mudkhed', 'mukhed',
+    'mul', 'mulchera', 'mulshi', 'murbad', 'murtijapur', 'murud', 'nagar', 'nagbhir', 'naigaon', 'nandgaon', 'nandgaon_khandeshwar', 'nandura', 'nandurbar', 'nashik', 'nawapur', 'ner', 'nevasa', 'nilanga', 'niphad', 'omarga', 'pachora', 'paithan', 'palam', 'palghar',
+     'palus', 'pandharpur', 'panhala', 'panvel', 'paranda', 'parbhani', 'parli', 'parner', 'parola', 'partur', 'patan', 'pathardi', 'pathari', 'patoda', 'patur', 'pen', 'peth', 'phaltan', 'phulambiri', 'poladpur', 'pombhurana', 'pune_city_urban',
+      'purandhar', 'purna', 'pusad', 'radhanagari', 'rahta', 'rahuri', 'rajapur', 'rajura', 'ralegaon', 'ramtek', 'ratnagiri', 'raver', 'renapur', 'risod', 'roha', 'sakri', 'samudrapur', 'sangameshwar', 'sangamner', 'sangole', 'sangrampur', 'sanver', 'satara',
+       'sawali', 'sawantwadi', 'seloo', 'seloo_parbhani', 'sengaon', 'shahade', 'shahpur', 'shahuwadi', 'shegaon', 'shevgaon', 'shirala', 'shirol', 'shirpur', 'shirur', 'shirur anantpal', 'shirur_pune', 'shrigonda', 'shrirampur', 'shrivardhan', 'sillod', 'sindewahi', 'sindkhed raja', 'sindkhede',
+       'uran', 'tiosa', 'trambakeshwar', 'tuljapur', 'udgir', 'umarrkhed', 'umred', 'umri', 'sinnar', 'sironcha', 'soegaon', 'sonpeth', 'state1', 'sudhagad', 'surgana', 'tala', 'talasari', 'talode', 'tasgaon', 'telhara', 'thane',
+       'vada', 'vaibhavvadi', 'vaijapur', 'vasai', 'velhe', 'vengurla', 'vikramgad', 'wadwani', 'wai', 'walwa', 'wani', 'wardha', 'warora', 'warud', 'washi', 'washim', 'yavatmal', 'yawal', 'yevla', 'zarijamani'
+]; // Initialize the layerNames array outside the function
+
+// URL of the WMS GetCapabilities request for the 'ne' workspace
+
+
+// Desired order of layer names
+
+
+
+
+  var wmsLayerGroup = L.layerGroup();
+
+  // Create array to hold all layer names with workspace prefix
+  var prefixedLayers = layerNames.map(layer => `${workspace}:${layer}`);
+
+  // Define WMS layer options with all layers
+  var wmsLayerOptions = {
+      layers: prefixedLayers,
+      maxZoom: 18,
+      format: 'image/png',
+      transparent: true
+  };
+
+  // Create WMS layer with all layers
+  var wmsLayer = L.tileLayer.wms('http://13.200.63.219:8080/geoserver/ne/wms', wmsLayerOptions);
+
+  // Add the layer to the WMS layer group
+  wmsLayerGroup.addLayer(wmsLayer);
+
+  // Optionally, add the WMS layer group to the map
+  wmsLayerGroup.addTo(map);
+
+
+  // Define district-wise tehsils
+
+
+          function createWMSLayer(layerName) {
+              return L.tileLayer.wms(geoserverUrl + '/' + workspace + '/wms', {
+                  layers: workspace + ':' + layerName,
+                  format: 'image/png',
+                  transparent: true,
+                  tiled: true
+              });
+          }
+
+          var wmsLayers = layerNames.map(function(layerName) {
+              var wmsLayer = createWMSLayer(layerName);
+              return wmsLayer;
+          });
+
+
+          function adjustMapHeight() {
+            
+             $('#map').show();
+             map.invalidateSize();
+            
+            }
+
+
+      // Function to handle map click event
+      function initializeMap(state, district, tehsil, village, khasra) {
+        var popup = L.popup();
+        
+        var selectedDistrict= district;
+        var selectedTehsil=tehsil;
+        var selectedVillage=village;
+        var selectedKhasraNo=khasra;
+        if (selectedDistrict && selectedTehsil && selectedVillage) {
+            var layerName = selectedTehsil.toLowerCase().replace(/\s+/g, '_');
+            if (layerName === 'pune_city') {
+              layerName += '_urban';
+            }
+            if (layerNames.includes(layerName)) {
+                // Clear existing layers
+                wmsLayerGroup.clearLayers();
+  
+                // Add the selected tehsil layer
+                var wmsLayer = L.tileLayer.wms(geoserverUrl + '/' + workspace + '/wms', {
+                    layers: workspace + ':' + layerName,
+                    format: 'image/png',
+                    transparent: true,
+                    version: '1.1.1',
+                    maxZoom:30
+                });
+                wmsLayerGroup.addLayer(wmsLayer);
+                wmsLayerGroup.addTo(map);
+  
+                // Get the bounding box for the selected village
+                var wmsUrl = 'http://13.200.63.219:8080/geoserver/ne/wfs';
+                var infoParams = {
+                    'service': 'WFS',
+                    'version': '1.1.0',
+                    'request': 'GetFeature',
+                    'typeName': workspace + ':' + layerName,
+                    'outputFormat': 'application/json',
+                    'cql_filter': `village='${selectedVillage}' AND khasra_no='${selectedKhasraNo}'`
+                };
+  
+                // Make an AJAX request to get the feature with the selected Village
+                $.ajax({
+                    url: wmsUrl,
+                    data: infoParams,
+                    method: 'GET',
+                    success: function(response) {
+                        console.log('Response:', response); // Debugging
+                        if (response.features && response.features.length > 0) {
+                            var featureGeometry = response.features[0].geometry;
+                            var bounds;
+  
+                            if (featureGeometry.type === 'Point') {
+                                bounds = L.latLng(featureGeometry.coordinates[0], featureGeometry.coordinates[1]);
+                                map.setView(bounds, 18); // Zoom to the point
+                            } else if (featureGeometry.type === 'Polygon' || featureGeometry.type === 'LineString' || featureGeometry.type === 'MultiPolygon') {
+                                var transformedCoordinates = [];
+  
+        // Define a function to transform coordinates from one projection to another
+        function transformCoordinates(coords) {
+        try {
+            if (Array.isArray(coords) && coords.length === 2 && coords.every(Number.isFinite)) {
+                // If the coordinates are a pair of numbers, perform the transformation
+                console.log('Original coordinate pair:', coords);
+                const [longitude, latitude] = coords; // Destructure the coordinate pair
+                console.log('Transforming coordinate pair:', coords);
+                const transformed = [(latitude), (longitude)];
+  
+                return transformed;
+            } else if (Array.isArray(coords)) {
+                // If the coordinates are an array, recursively process nested arrays
+                console.log('Processing nested array:', coords);
+                return coords.map(subCoords => transformCoordinates(subCoords));
+            } else {
+                // Handle invalid coordinates
+                throw new Error('Invalid coordinates: not an array or coordinate pair');
+            }
+        } catch (error) {
+            // Log and handle errors during transformation
+            console.error('Error transforming coordinates:', error);
+            return null; // Return null if transformation fails
+        }
+    }
+  
+        // After transforming all coordinates, choose one coordinate to zoom in on
+        try {
+        var transformedCoordinates = [];
+        featureGeometry.coordinates.forEach(function(coords) {
+            console.log('Inspecting coordinates:', coords);
+            const transformed = transformCoordinates(coords);
+            if (transformed) {
+                // Only add valid transformed coordinates to the array
+                transformedCoordinates.push(transformed);
+            }
+        });
+  
+        console.log('Transformed Coordinates:', transformedCoordinates);
+  
+        // Check if any transformed coordinates are available
+        if (transformedCoordinates.length > 0) {
+        // Calculate the bounds of the polygon formed by all coordinates
+        var polygonBounds;
+    var padding = [60, 60]; // Adjust this value to control the padding
+    var maxZoom = 30; // Set your desired maximum zoom level
+  
+  
+    function updatePolygon(transformedCoordinates) {
+        polygonBounds = calculatePolygonBounds(transformedCoordinates);
+        map.eachLayer(function(layer) {
+                                        if (layer instanceof L.Polygon) {
+                                            map.removeLayer(layer);
+                                        }
+                                    });
+        map.fitBounds(polygonBounds, { padding: padding, maxZoom: maxZoom });
+        var polygon = L.polygon(transformedCoordinates, {
+            color: 'blue',  // Set the color of the polygon's outline
+            weight: 3,      // Set the width of the polygon's outline
+            fillColor: 'lightblue',  // Set the fill color of the polygon
+            fillOpacity: 0.5  // Set the opacity of the fill color
+        }).addTo(map);
+    }
+    updatePolygon(transformedCoordinates);
+    } else {
+        console.error('No valid transformed coordinates available.');
+    }
+    } catch (error) {
+        console.error('Error processing transformed coordinates:', error);
+    }
+    function calculatePolygonBounds(coordinates) {
+        var bounds = L.latLngBounds(coordinates);
+        return bounds;
+    }
+                            } else {
+                                alert('The selected feature does not represent a point, polygon, or line.');
+                            }
+                        } else {
+  
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error fetching feature info:', error);
+                    }
+                });
+                adjustMapHeight();
+                // Add click event listener to the map
+                function onMapClick(e) {
+                    var latlng = e.latlng;
+                    var point = map.latLngToContainerPoint(latlng);
+  
+                    // Define the WMS GetFeatureInfo URL
+                    var wmsUrl = 'http://13.200.63.219:8080/geoserver/ne/wms';
+                    var infoParams = {
+                        'request': 'GetFeatureInfo',
+                        'service': 'WMS',
+                        'srs': 'EPSG:4326',
+                        'styles': '',
+                        'transparent': true,
+                        'version': '1.1.1',
+                        'format': 'image/png',
+                        'bbox': map.getBounds().toBBoxString(),
+                        'height': map.getSize().y,
+                        'width': map.getSize().x,
+                        'layers': layerName,
+                        'query_layers': layerName,
+                        'info_format': 'application/json',
+                        'x': Math.round(point.x),
+                        'y': Math.round(point.y),
+                        'cql_filter': `village='${selectedVillage}' AND khasra_no='${selectedKhasraNo}'`
+                    };
+  
+                    // Make an AJAX request to get feature info
+                    $.ajax({
+                        url: wmsUrl,
+                        data: infoParams,
+                        method: 'GET',
+                        success: function(response) {
+                            console.log(response); // Check the console to see the structure
+                            if (response.features && response.features.length > 0) {
+                              var popupContent = '<table class="popup-table">';
+                                  var propertiesToShow = [
+                                      { name: 'state', header: 'State' },
+                                      { name: 'state_code', header: 'State Code' },
+                                      { name: 'district', header: 'District' },
+                                      { name: 'distt_code', header: 'District Code' },
+                                      { name: 'tehsil', header: 'Tehsil' },
+                                      { name: 'teh_code', header: 'Tehsil Code' },
+                                      { name: 'village', header: 'Village' },
+                                      { name: 'lgd_code', header: 'LGD' },
+                                      { name: 'khasra_no', header: 'Khasra No' },
+                                      { name: 'area_ac', header: 'Area (Ac)' },
+                                      { name: 'lu_lc', header: 'LU/LC' }
+                                  ];
+  
+                                  var properties = response.features[0].properties;
+  
+                                  propertiesToShow.forEach(function(prop) {
+                                      if (properties.hasOwnProperty(prop.name) && properties[prop.name] !== "") {
+                                          popupContent += '<tr><td class="table-header">' + prop.header + ':</td><td>' + properties[prop.name] + '</td></tr>';
+                                      }
+                                  });
+  
+                                  popupContent += '</table>';
+  
+                                  // Add the link below the table
+                                  popupContent += '<br><a href="https://bhulekh.mahabhumi.gov.in/" target="_blank">More Information</a>';
+  
+                                  L.popup()
+                                      .setLatLng(latlng)
+                                      .setContent(popupContent)
+                                      .openOn(map);
+  
+                            } else {
+  
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error fetching feature info:', error);
+                        }
+                    });
+                }
+                map.on('click', onMapClick);
+                wmsLayerGroup.addTo(map);
+  
+                $('#toggleButton').show();
+            } else {
+                alert('The selected tehsil layer is not available.');
+            }
+        } else {
+            alert('Please select a tehsil.');
+        }
+        
+    }
+
+    
+
+
+      
+
+
+
+      
+  // Add click event listener to search button
+ 
+</script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+</body>
+</html>
